@@ -30,3 +30,9 @@ macos/Pods/
 # Misc
 *.DS_Store
 pubspec.lock
+
+# Backend files (لا تنتمي لمشروع Flutter)
+node_modules/
+oncall.db
+*.db
+lib/server.js
