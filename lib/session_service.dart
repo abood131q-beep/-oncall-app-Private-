@@ -15,6 +15,7 @@ class SessionService {
   static bool _isDriver = false;
   static int _userId = 0;
   static int _driverId = 0;
+  static bool _loginInProgress = false; // يمنع طلبين في نفس الوقت
 
   // ===== Getters =====
   static String get token => _token;
@@ -36,6 +37,8 @@ class SessionService {
 
   // ===== تسجيل دخول الراكب =====
   static Future<Map<String, dynamic>> loginPassenger(String phone) async {
+    if (_loginInProgress) return {'success': false, 'message': 'جاري تسجيل الدخول...'};
+    _loginInProgress = true;
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
@@ -66,11 +69,15 @@ class SessionService {
     } catch (e) {
       debugPrint('❌ Login error: ${e.toString()}');
       return {'success': false, 'message': 'تعذر الاتصال: ${e.toString()}'};
+    } finally {
+      _loginInProgress = false;
     }
   }
 
   // ===== تسجيل دخول السائق =====
   static Future<Map<String, dynamic>> loginDriver(String phone) async {
+    if (_loginInProgress) return {'success': false, 'message': 'جاري تسجيل الدخول...'};
+    _loginInProgress = true;
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/driver/login'),
@@ -100,6 +107,8 @@ class SessionService {
     } catch (e) {
       debugPrint('❌ Driver login error: ${e.toString()}');
       return {'success': false, 'message': 'تعذر الاتصال: ${e.toString()}'};
+    } finally {
+      _loginInProgress = false;
     }
   }
 

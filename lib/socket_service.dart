@@ -5,9 +5,9 @@ import 'config.dart';
 class SocketService {
   static IO.Socket? _socket;
   static bool _connected = false;
+  static bool _connecting = false; // يمنع اتصالين في نفس الوقت
   static String? _currentToken;
 
-  // يُستدعى بعد Login مباشرةً — يمرر الـ JWT token للسيرفر
   static IO.Socket _buildSocket(String token) {
     final transports = kIsWeb ? ['polling'] : ['websocket', 'polling'];
     return IO.io(
@@ -19,7 +19,7 @@ class SocketService {
           .enableReconnection()
           .setReconnectionAttempts(10)
           .setReconnectionDelay(3000)
-          .setAuth({'token': token}) // ← JWT token للمصادقة مع السيرفر
+          .setAuth({'token': token})
           .build(),
     );
   }
@@ -29,13 +29,12 @@ class SocketService {
     return _socket!;
   }
 
-  // الدالة الوحيدة للاتصال — تستلزم token صالح
   static void connectWithToken(String token) {
-    // إذا نفس الـ token وهو متصل → لا داعي لإعادة الاتصال
-    if (_currentToken == token && _connected) return;
+    // نفس الـ token ومتصل أو جاري الاتصال → تجاهل
+    if (_currentToken == token && (_connected || _connecting)) return;
 
-    // إذا تغيّر الـ token (تسجيل دخول بحساب آخر) → انقطع أولاً
-    if (_socket != null && _currentToken != token) {
+    // token جديد → انقطع أولاً وأغلق القديم
+    if (_socket != null) {
       _socket!.disconnect();
       _socket!.dispose();
       _socket = null;
@@ -43,17 +42,23 @@ class SocketService {
     }
 
     _currentToken = token;
+    _connecting = true;
     _socket = _buildSocket(token);
 
     _socket!.onConnect((_) {
       _connected = true;
+      _connecting = false;
       debugPrint('✅ Socket connected');
     });
     _socket!.onDisconnect((_) {
       _connected = false;
+      _connecting = false;
       debugPrint('❌ Socket disconnected');
     });
-    _socket!.onConnectError((e) => debugPrint('❌ Socket connect error: $e'));
+    _socket!.onConnectError((e) {
+      _connecting = false;
+      debugPrint('❌ Socket connect error: $e');
+    });
     _socket!.onReconnect((_) => debugPrint('🔄 Socket reconnected'));
 
     _socket!.connect();
