@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'map_page.dart' show MapPage;
 import 'driver_profile_page.dart';
@@ -97,9 +96,7 @@ class _DriverPageState extends State<DriverPage> {
           }
         } catch (_) {}
       }
-      final response = await http
-          .get(Uri.parse('$baseUrl/taxi/trips?driver_phone=$driverPhone'))
-          .timeout(const Duration(seconds: 10));
+      final response = await SessionService.get('/taxi/trips?driver_phone=$driverPhone');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
