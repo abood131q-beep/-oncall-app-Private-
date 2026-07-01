@@ -15,7 +15,8 @@ class SessionService {
   static bool _isDriver = false;
   static int _userId = 0;
   static int _driverId = 0;
-  static bool _loginInProgress = false; // يمنع طلبين في نفس الوقت
+  static bool _loginInProgress = false;       // يمنع طلبين في نفس الوقت
+  static DateTime? _rateLimitedUntil;         // cooldown بعد 429
 
   // ===== Getters =====
   static String get token => _token;
@@ -38,6 +39,10 @@ class SessionService {
   // ===== تسجيل دخول الراكب =====
   static Future<Map<String, dynamic>> loginPassenger(String phone) async {
     if (_loginInProgress) return {'success': false, 'message': 'جاري تسجيل الدخول...'};
+    if (_rateLimitedUntil != null && DateTime.now().isBefore(_rateLimitedUntil!)) {
+      final secs = _rateLimitedUntil!.difference(DateTime.now()).inSeconds + 1;
+      return {'success': false, 'message': 'محاولات كثيرة - انتظر $secs ثانية'};
+    }
     _loginInProgress = true;
     try {
       final response = await http.post(
@@ -63,6 +68,7 @@ class SessionService {
         return {'success': false, 'message': data['message'] ?? 'فشل تسجيل الدخول'};
       }
       if (response.statusCode == 429) {
+        _rateLimitedUntil = DateTime.now().add(const Duration(seconds: 60));
         return {'success': false, 'message': 'محاولات كثيرة - انتظر دقيقة'};
       }
       return {'success': false, 'message': 'خطأ ${response.statusCode}'};
@@ -77,6 +83,10 @@ class SessionService {
   // ===== تسجيل دخول السائق =====
   static Future<Map<String, dynamic>> loginDriver(String phone) async {
     if (_loginInProgress) return {'success': false, 'message': 'جاري تسجيل الدخول...'};
+    if (_rateLimitedUntil != null && DateTime.now().isBefore(_rateLimitedUntil!)) {
+      final secs = _rateLimitedUntil!.difference(DateTime.now()).inSeconds + 1;
+      return {'success': false, 'message': 'محاولات كثيرة - انتظر $secs ثانية'};
+    }
     _loginInProgress = true;
     try {
       final response = await http.post(
@@ -101,7 +111,8 @@ class SessionService {
         return {'success': false, 'message': data['message'] ?? 'فشل تسجيل الدخول'};
       }
       if (response.statusCode == 429) {
-        return {'success': false, 'message': 'محاولات كثيرة - انتظر 5 دقائق'};
+        _rateLimitedUntil = DateTime.now().add(const Duration(seconds: 60));
+        return {'success': false, 'message': 'محاولات كثيرة - انتظر دقيقة'};
       }
       return {'success': false, 'message': 'خطأ ${response.statusCode}'};
     } catch (e) {
