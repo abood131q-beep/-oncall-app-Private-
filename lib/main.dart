@@ -709,6 +709,7 @@ class _PassengerTaxiPageState extends State<PassengerTaxiPage> {
   Future<void> orderTaxi() async {
     final pickup = pickupName.isNotEmpty ? pickupName : pickupController.text.trim();
     final dest = destName.isNotEmpty ? destName : destController.text.trim();
+    debugPrint('🚕 orderTaxi called: pickup="$pickup" dest="$dest" lat=$pickupLat lng=$pickupLng');
 
     if (pickup.isEmpty || dest.isEmpty) {
       setState(() => errorMessage = 'اختر موقع الانطلاق والوجهة');
@@ -732,13 +733,17 @@ class _PassengerTaxiPageState extends State<PassengerTaxiPage> {
       final data = jsonDecode(response.body);
       if (data['success'] == true) {
         setState(() => tripResult = data);
-        // ✅ انضم للغرفة فوراً بعد طلب التكسي
-        final tripId = data['trip']['id'] is int 
+        final tripId = data['trip']['id'] is int
             ? data['trip']['id'] as int
             : int.tryParse(data['trip']['id'].toString()) ?? 0;
         if (!SocketService.isConnected) SocketService.connectWithToken(SessionService.token);
         SocketService.joinAsPassenger(tripId, currentUserPhone);
         debugPrint('🔌 Joined trip room after request: $tripId');
+        if (mounted) {
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => PassengerTrackingPage(tripId: tripId),
+          ));
+        }
       } else {
         setState(() => errorMessage = data['message'] ?? 'حدث خطأ');
       }

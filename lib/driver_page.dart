@@ -384,6 +384,10 @@ class _DriverPageState extends State<DriverPage> {
               try {
                 await SessionService.post('/driver/status', {'phone': currentUserPhone, 'isOnline': newStatus});
                 setState(() => isOnline = newStatus);
+                if (newStatus) {
+                  if (!SocketService.isConnected) SocketService.connectWithToken(SessionService.token);
+                  SocketService.registerDriver();
+                }
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(newStatus ? '🟢 أنت الآن متصل - ستظهر للركاب' : '🔴 أنت الآن غير متصل'),
