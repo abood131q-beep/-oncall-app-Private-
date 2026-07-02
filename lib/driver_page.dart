@@ -80,6 +80,11 @@ class _DriverPageState extends State<DriverPage> {
   void dispose() {
     _locationTimer?.cancel();
     _autoRefreshTimer?.cancel();
+    for (final t in countdownTimers.values) t.cancel();
+    countdownTimers.clear();
+    SocketService.offNewTrip();
+    SocketService.offTripUpdated();
+    SocketService.offTripAccepted();
     super.dispose();
   }
 
@@ -387,6 +392,8 @@ class _DriverPageState extends State<DriverPage> {
                 if (newStatus) {
                   if (!SocketService.isConnected) SocketService.connectWithToken(SessionService.token);
                   SocketService.registerDriver();
+                } else if (SocketService.isConnected) {
+                  SocketService.socket.emit('driver:status', {'isOnline': false});
                 }
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(

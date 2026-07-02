@@ -742,7 +742,9 @@ class _PassengerTaxiPageState extends State<PassengerTaxiPage> {
         if (mounted) {
           Navigator.push(context, MaterialPageRoute(
             builder: (_) => PassengerTrackingPage(tripId: tripId),
-          ));
+          )).then((_) {
+            if (mounted) setState(() => tripResult = null);
+          });
         }
       } else {
         setState(() => errorMessage = data['message'] ?? 'حدث خطأ');
