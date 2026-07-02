@@ -15,8 +15,9 @@ class SessionService {
   static bool _isDriver = false;
   static int _userId = 0;
   static int _driverId = 0;
-  static bool _loginInProgress = false;       // يمنع طلبين في نفس الوقت
-  static DateTime? _rateLimitedUntil;         // cooldown بعد 429
+  static bool _loginInProgress = false;
+  static DateTime? _passengerRateLimitedUntil;  // cooldown مستقل للراكب
+  static DateTime? _driverRateLimitedUntil;     // cooldown مستقل للسائق
 
   // ===== Getters =====
   static String get token => _token;
@@ -39,8 +40,8 @@ class SessionService {
   // ===== تسجيل دخول الراكب =====
   static Future<Map<String, dynamic>> loginPassenger(String phone) async {
     if (_loginInProgress) return {'success': false, 'message': 'جاري تسجيل الدخول...'};
-    if (_rateLimitedUntil != null && DateTime.now().isBefore(_rateLimitedUntil!)) {
-      final secs = _rateLimitedUntil!.difference(DateTime.now()).inSeconds + 1;
+    if (_passengerRateLimitedUntil != null && DateTime.now().isBefore(_passengerRateLimitedUntil!)) {
+      final secs = _passengerRateLimitedUntil!.difference(DateTime.now()).inSeconds + 1;
       return {'success': false, 'message': 'محاولات كثيرة - انتظر $secs ثانية'};
     }
     _loginInProgress = true;
@@ -62,19 +63,21 @@ class SessionService {
           _userId = data['user']?['id'] ?? 0;
           _isDriver = false;
           debugPrint('✅ Session: $_phone | token: ${_token.substring(0, _token.length.clamp(0, 8))}...');
-          SocketService.connectWithToken(_token); // ✅ اتصال فوري بعد Login
+          SocketService.connectWithToken(_token);
           return {'success': true, 'user': data['user']};
         }
         return {'success': false, 'message': data['message'] ?? 'فشل تسجيل الدخول'};
       }
       if (response.statusCode == 429) {
-        _rateLimitedUntil = DateTime.now().add(const Duration(seconds: 60));
-        return {'success': false, 'message': 'محاولات كثيرة - انتظر دقيقة'};
+        final data = jsonDecode(response.body);
+        final secs = (data['retryAfter'] as num?)?.toInt() ?? 300;
+        _passengerRateLimitedUntil = DateTime.now().add(Duration(seconds: secs));
+        return {'success': false, 'message': data['message'] ?? 'محاولات كثيرة - انتظر $secs ثانية'};
       }
       return {'success': false, 'message': 'خطأ ${response.statusCode}'};
     } catch (e) {
       debugPrint('❌ Login error: ${e.toString()}');
-      return {'success': false, 'message': 'تعذر الاتصال: ${e.toString()}'};
+      return {'success': false, 'message': 'تعذر الاتصال بالسيرفر'};
     } finally {
       _loginInProgress = false;
     }
@@ -83,8 +86,8 @@ class SessionService {
   // ===== تسجيل دخول السائق =====
   static Future<Map<String, dynamic>> loginDriver(String phone) async {
     if (_loginInProgress) return {'success': false, 'message': 'جاري تسجيل الدخول...'};
-    if (_rateLimitedUntil != null && DateTime.now().isBefore(_rateLimitedUntil!)) {
-      final secs = _rateLimitedUntil!.difference(DateTime.now()).inSeconds + 1;
+    if (_driverRateLimitedUntil != null && DateTime.now().isBefore(_driverRateLimitedUntil!)) {
+      final secs = _driverRateLimitedUntil!.difference(DateTime.now()).inSeconds + 1;
       return {'success': false, 'message': 'محاولات كثيرة - انتظر $secs ثانية'};
     }
     _loginInProgress = true;
@@ -105,19 +108,21 @@ class SessionService {
           _driverId = data['driver']?['id'] ?? 0;
           _isDriver = true;
           debugPrint('✅ Driver session: $_phone');
-          SocketService.connectWithToken(_token); // ✅ اتصال فوري بعد Login
+          SocketService.connectWithToken(_token);
           return {'success': true, 'driver': data['driver']};
         }
         return {'success': false, 'message': data['message'] ?? 'فشل تسجيل الدخول'};
       }
       if (response.statusCode == 429) {
-        _rateLimitedUntil = DateTime.now().add(const Duration(seconds: 60));
-        return {'success': false, 'message': 'محاولات كثيرة - انتظر دقيقة'};
+        final data = jsonDecode(response.body);
+        final secs = (data['retryAfter'] as num?)?.toInt() ?? 300;
+        _driverRateLimitedUntil = DateTime.now().add(Duration(seconds: secs));
+        return {'success': false, 'message': data['message'] ?? 'محاولات كثيرة - انتظر $secs ثانية'};
       }
       return {'success': false, 'message': 'خطأ ${response.statusCode}'};
     } catch (e) {
       debugPrint('❌ Driver login error: ${e.toString()}');
-      return {'success': false, 'message': 'تعذر الاتصال: ${e.toString()}'};
+      return {'success': false, 'message': 'تعذر الاتصال بالسيرفر'};
     } finally {
       _loginInProgress = false;
     }
