@@ -5,8 +5,7 @@ import 'package:http/http.dart' as http;
 import 'session_service.dart';
 
 // ===== عنوان السيرفر (نفس config.dart) =====
-const String _serverUrl = 'http://localhost:3000';
-// للهاتف الحقيقي: 'http://192.168.X.X:3000'
+const String _serverUrl = 'http://172.20.10.2:3000';
 
 // ===== نموذج المكان =====
 class PlaceResult {
