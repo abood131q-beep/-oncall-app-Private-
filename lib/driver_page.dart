@@ -593,7 +593,7 @@ class _DriverPageState extends State<DriverPage> {
                                   ],
 
                                   // أزرار التحكم فقط للسائق الصاحب
-                                  if (status == 'accepted' && trip['driver_name'] == currentDriverName)
+                                  if (status == 'accepted' && trip['driver_id'] == SessionService.driverId)
                                     SizedBox(
                                       width: double.infinity,
                                       child: ElevatedButton.icon(
@@ -608,7 +608,7 @@ class _DriverPageState extends State<DriverPage> {
                                     ),
 
                                   // زر بدأت الرحلة
-                                  if (status == 'arrived' && trip['driver_name'] == currentDriverName)
+                                  if (status == 'arrived' && trip['driver_id'] == SessionService.driverId)
                                     SizedBox(
                                       width: double.infinity,
                                       child: ElevatedButton.icon(
@@ -630,10 +630,10 @@ class _DriverPageState extends State<DriverPage> {
                                     ),
 
                                   // زر فتح الخريطة
-                                  if ((status == 'accepted' || status == 'arrived' || status == 'in_progress') && trip['driver_name'] == currentDriverName)
+                                  if ((status == 'accepted' || status == 'arrived' || status == 'in_progress') && trip['driver_id'] == SessionService.driverId)
                                     const SizedBox(height: 8),
 
-                                  if ((status == 'accepted' || status == 'arrived' || status == 'in_progress') && trip['driver_name'] == currentDriverName)
+                                  if ((status == 'accepted' || status == 'arrived' || status == 'in_progress') && trip['driver_id'] == SessionService.driverId)
                                     SizedBox(
                                       width: double.infinity,
                                       child: OutlinedButton.icon(
@@ -651,7 +651,7 @@ class _DriverPageState extends State<DriverPage> {
                                     ),
 
                                   // زر إنهاء الرحلة
-                                  if (status == 'in_progress' && trip['driver_name'] == currentDriverName) ...[
+                                  if (status == 'in_progress' && trip['driver_id'] == SessionService.driverId) ...[
                                     const SizedBox(height: 8),
                                     SizedBox(
                                       width: double.infinity,
